@@ -1,0 +1,189 @@
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Ball Sort Puzzle - Color Sorting Bubble Games</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:linear-gradient(180deg,#1a2a6c,#b21f1f,#fdbb2d);background-attachment:fixed;color:#fff;font-family:Arial,sans-serif;display:flex;flex-direction:column;align-items:center;min-height:100vh}
+.topBar{width:100%;max-width:430px;display:flex;justify-content:space-between;align-items:center;padding:12px 15px;background:rgba(0,0,0,0.3);backdrop-filter:blur(5px);position:sticky;top:0;z-index:10}
+.topBar b{font-size:15px}
+.levelBox{background:#fff;color:#000;padding:6px 14px;border-radius:20px;font-weight:bold}
+.header{text-align:center;padding:12px 10px 0}
+.header h1{font-size:27px;margin:0;text-shadow:0 3px 0 rgba(0,0,0,0.3);line-height:1}
+.header h1 span{color:#ffe600}
+.header p{margin:6px 0;color:#fff;font-size:13px;opacity:0.9}
+.stats{display:flex;gap:8px;margin:12px 0;flex-wrap:wrap;justify-content:center}
+.pill{background:rgba(255,255,255,0.95);color:#000;padding:8px 14px;border-radius:20px;font-weight:bold;font-size:13px;box-shadow:0 3px 8px rgba(0,0,0,0.3)}
+#board{display:flex;flex-wrap:wrap;justify-content:center;gap:12px 10px;max-width:430px;padding:15px 10px 100px}
+.tube{width:52px;background:linear-gradient(180deg,rgba(255,255,255,0.35),rgba(255,255,255,0.05));border:2px solid rgba(255,255,255,0.8);border-top:3px solid rgba(255,255,255,0.9);border-bottom-left-radius:26px;border-bottom-right-radius:26px;display:flex;flex-direction:column-reverse;align-items:center;justify-content:flex-start;padding:0 3px 7px;position:relative;box-shadow:0 5px 15px rgba(0,0,0,0.3)}
+.tube.sel{border-color:#ffe600;box-shadow:0 0 0 3px #ffe600,0 0 20px #ffe600;transform:translateY(-8px)}
+.tube.done{border-color:#2ed573;box-shadow:0 0 15px #2ed573}
+.ball{width:42px;height:34px;border-radius:50%;margin:1.5px 0;position:relative;border:1px solid rgba(0,0,0,0.2);box-shadow:inset -5px -6px 8px rgba(0,0,0,0.35),inset 4px 5px 6px rgba(255,255,255,0.5)}
+.ball::after{content:'';position:absolute;left:7px;top:5px;width:14px;height:10px;background:rgba(255,255,255,0.9);border-radius:50%;transform:rotate(-20deg)}
+.ball::before{content:'';position:absolute;right:6px;bottom:4px;width:6px;height:6px;background:rgba(255,255,255,0.6);border-radius:50%}
+#fly{position:fixed;width:42px;height:34px;border-radius:50%;z-index:100;display:none;pointer-events:none;box-shadow:inset -5px -6px 8px rgba(0,0,0,0.3)}
+#fly::after{content:'';position:absolute;left:7px;top:5px;width:14px;height:10px;background:rgba(255,255,255,0.9);border-radius:50%}
+.bottomBar{position:fixed;bottom:0;left:0;right:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(10px);display:flex;justify-content:center;gap:10px;padding:12px;z-index:20;flex-wrap:wrap}
+.btn{padding:11px 18px;border-radius:25px;border:none;font-weight:bold;font-size:14px;cursor:pointer;box-shadow:0 4px 10px rgba(0,0,0,0.3)}
+.spark{position:fixed;width:9px;height:9px;border-radius:50%;pointer-events:none;z-index:99}
+#congrats{position:fixed;inset:0;background:rgba(0,0,0,0.9);display:none;align-items:center;justify-content:center;flex-direction:column;z-index:200;text-align:center;padding:20px}
+#congrats h1{font-size:32px}
+#congrats button{background:#2ed573;color:#000;padding:15px 40px;border:none;border-radius:30px;font-weight:bold;font-size:19px;margin-top:15px}
+.stars{font-size:35px;letter-spacing:5px}
+</style>
+</head>
+<body>
+<div class="topBar"><b>🎮 BALL SORT</b><div class="levelBox">LEVEL <span id="lvl">1</span></div><b>⭐ <span id="sc">0</span></b></div>
+<div class="header"><h1>BALL SORT <span>PUZZLE</span></h1><p>Color Sorting Bubble Games</p></div>
+<div class="stats">
+<div class="pill">🎯 Moves: <span id="moves">0</span></div>
+<div class="pill">🧪 Tubes: <span id="tubeCount">0</span></div>
+<div class="pill">🔴 Balls: <span id="ballCount">4</span></div>
+</div>
+<div id="board"></div>
+<div id="fly"></div>
+
+<div class="bottomBar">
+<button class="btn" onclick="makeLevel()" style="background:#ff4757;color:#fff">↻ Restart</button>
+<button class="btn" onclick="undoMove()" style="background:#fff;color:#000">↩ Undo</button>
+<button class="btn" onclick="addTube()" style="background:#2ed573;color:#000">+ Add Tube</button>
+<button class="btn" onclick="nextLevel()" style="background:#ffe600;color:#000">Next ▶</button>
+<button class="btn" id="sndBtn" onclick="toggleSound()" style="background:#1e90ff;color:#fff">🔊 Sound</button>
+<button class="btn" id="musicBtn" onclick="toggleMusic()" style="background:#9b59b6;color:#fff">🎵 Music</button>
+</div>
+
+<div id="congrats"><div style="font-size:70px">🏆</div><div class="stars">⭐⭐⭐</div><h1>Level Complete!</h1><p id="congText"></p><p id="congScore" style="font-size:20px;font-weight:bold;color:#ffe600"></p><button onclick="nextLevel()">Next Level ▶</button></div>
+
+<script>
+let level=1, score=0, moves=0, selected=-1, animating=false;
+
+// ===== AUDIO (Web Audio API - koi external file nahi chahiye) =====
+let AC=null, soundOn=true, musicOn=true, musicTimer=null, mi=0;
+function initAudio(){
+  if(!AC){ try{ AC=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} }
+  if(AC && AC.state==='suspended') AC.resume();
+}
+function tone(freq,dur,type,vol,delay,slideTo,music){
+  if(!AC || (music?!musicOn:!soundOn)) return;
+  let t=AC.currentTime+(delay||0);
+  let o=AC.createOscillator(), g=AC.createGain();
+  o.type=type||'sine';
+  o.frequency.setValueAtTime(freq,t);
+  if(slideTo) o.frequency.exponentialRampToValueAtTime(slideTo,t+dur);
+  g.gain.setValueAtTime(0.0001,t);
+  g.gain.exponentialRampToValueAtTime(vol||0.15,t+0.015);
+  g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+  o.connect(g); g.connect(AC.destination);
+  o.start(t); o.stop(t+dur+0.05);
+}
+const SFX={
+  click(){ tone(800,0.05,'square',0.05); },
+  select(){ tone(660,0.12,'sine',0.16,0,990); },
+  deselect(){ tone(500,0.1,'sine',0.12,0,330); },
+  whoosh(){ tone(300,0.25,'triangle',0.08,0,900); },
+  drop(k){ tone(520+k*60,0.15,'sine',0.18); tone(260+k*30,0.2,'triangle',0.12); },
+  error(){ tone(180,0.22,'sawtooth',0.09,0,110); },
+  undo(){ tone(600,0.12,'square',0.07,0,400); tone(400,0.12,'square',0.07,0.1,300); },
+  add(){ tone(440,0.1,'sine',0.15); tone(660,0.15,'sine',0.15,0.1); },
+  done(){ [523,659,784].forEach((f,i)=>tone(f,0.2,'sine',0.15,i*0.08)); },
+  win(){ [523,659,784,1047,784,1047,1319].forEach((f,i)=>tone(f,0.28,'triangle',0.18,i*0.13)); }
+};
+const melody=[523,587,659,784,659,587,523,392, 440,523,587,659,587,523,440,392];
+function startMusic(){
+  if(musicTimer || !musicOn) return;
+  musicTimer=setInterval(()=>{
+    if(!AC || !musicOn || document.hidden) return;
+    let f=melody[mi%melody.length];
+    tone(f,0.5,'triangle',0.04,0,null,true);
+    if(mi%4===0) tone(f/2,0.9,'sine',0.05,0,null,true);
+    mi++;
+  },450);
+}
+function stopMusic(){ clearInterval(musicTimer); musicTimer=null; }
+function toggleSound(){
+  soundOn=!soundOn;
+  document.getElementById('sndBtn').innerText=soundOn?'🔊 Sound':'🔇 Sound';
+  initAudio(); if(soundOn) SFX.click();
+}
+function toggleMusic(){
+  musicOn=!musicOn;
+  document.getElementById('musicBtn').innerText=musicOn?'🎵 Music':'🔕 Music';
+  if(musicOn){ initAudio(); startMusic(); } else { stopMusic(); }
+}
+// Browser pehle tap ke baad hi audio allow karta hai
+document.addEventListener('pointerdown',()=>{ initAudio(); startMusic(); });
+let colors=['#ff2d2d','#ff8c00','#2ed573','#1e90ff','#ff69b4','#9b59b6','#ffe600','#00d2d3','#ff4757','#7bed9f','#ff6b81','#a29bfe'];
+let tubes=[], ballsPerTube=4, history=[];
+function getBallsPerTube(lv){ if(lv<=5) return 4; if(lv<=15) return 5; if(lv<=30) return 6; return 7; }
+function getTubeCount(lv){ if(lv<=3) return 5; if(lv<=10) return 6; if(lv<=20) return 7; if(lv<=40) return 8; if(lv<=80) return 9; return 10; }
+function makeLevel(){
+  SFX.click();
+  tubes=[]; history=[]; moves=0; ballsPerTube=getBallsPerTube(level);
+  let totalColors=getTubeCount(level)-2; if(totalColors>colors.length) totalColors=colors.length;
+  let all=[]; let use=colors.slice(0,totalColors);
+  use.forEach(c=>{for(let i=0;i<ballsPerTube;i++) all.push(c);});
+  // Shuffle acha wala - taaki level solvable rahe
+  for(let i=all.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1)); [all[i],all[j]]=[all[j],all[i]];}
+  for(let i=0;i<totalColors;i++) tubes.push(all.slice(i*ballsPerTube,i*ballsPerTube+ballsPerTube));
+  tubes.push([]); tubes.push([]); selected=-1;
+  document.getElementById('ballCount').innerText=ballsPerTube;
+  document.getElementById('tubeCount').innerText=tubes.length;
+  document.getElementById('moves').innerText=moves;
+  render();
+}
+function render(){
+  document.getElementById('lvl').innerText=level;
+  document.getElementById('sc').innerText=score;
+  let board=document.getElementById('board'); board.innerHTML='';
+  let tubeH=70+ballsPerTube*36;
+  tubes.forEach((tube,ti)=>{
+    let div=document.createElement('div');
+    let isDone=tube.length===ballsPerTube && tube.every(v=>v===tube[0]);
+    div.className='tube'+(selected===ti?' sel':'')+(isDone?' done':'');
+    div.style.height=tubeH+'px'; div.id='tube-'+ti; div.onclick=()=>clickTube(ti);
+    tube.forEach(c=>{let b=document.createElement('div'); b.className='ball'; b.style.background=c; div.appendChild(b);});
+    board.appendChild(div);
+  });
+  let done=tubes.every(t=>t.length===0||(t.length===ballsPerTube && t.every(v=>v===t[0])));
+  if(done && tubes.length>0){
+    let bonus=Math.max(0,100-moves*2);
+    score+=100*level+bonus;
+    document.getElementById('congText').innerText=`Level ${level} Complete in ${moves} Moves!`;
+    document.getElementById('congScore').innerText=`Score: ${score} | Bonus: +${bonus}`;
+    setTimeout(()=>{ SFX.win(); document.getElementById('congrats').style.display='flex'; },500);
+  }
+}
+function nextLevel(){ document.getElementById('congrats').style.display='none'; level++; makeLevel(); }
+function addTube(){ if(tubes.length>=12){alert('Max tubes reached!');return;} tubes.push([]); SFX.add(); document.getElementById('tubeCount').innerText=tubes.length; render(); }
+function undoMove(){ if(history.length===0 || animating) return; SFX.undo(); let last=history.pop(); tubes=JSON.parse(JSON.stringify(last.tubes)); score=last.score; moves=last.moves; selected=-1; document.getElementById('moves').innerText=moves; render(); }
+function spark(x,y,color){ for(let i=0;i<8;i++){ let s=document.createElement('div'); s.className='spark'; s.style.background=color; s.style.left=x+'px'; s.style.top=y+'px'; document.body.appendChild(s); let dx=(Math.random()-0.5)*70, dy=(Math.random()-0.5)*70; s.animate([{transform:'translate(0,0) scale(1)',opacity:1},{transform:`translate(${dx}px,${dy}px) scale(0)`,opacity:0}],{duration:600}).onfinish=()=>s.remove(); } }
+function flyArc(fromEl,toEl,color,topOffset){
+  return new Promise(res=>{
+    let fly=document.getElementById('fly');
+    let r1=fromEl.getBoundingClientRect(), r2=toEl.getBoundingClientRect();
+    let sx=r1.left+5, sy=r1.top+12, ex=r2.left+5, ey=r2.top + r2.height - 35 - topOffset*36;
+    let mx=(sx+ex)/2, my=Math.min(sy,ey)-130;
+    fly.style.display='block'; fly.style.background=color;
+    let t=0; let iv=setInterval(()=>{ t+=0.08; if(t>=1){ clearInterval(iv); fly.style.display='none'; res(); return; } let x=(1-t)*(1-t)*sx + 2*(1-t)*t*mx + t*t*ex; let y=(1-t)*(1-t)*sy + 2*(1-t)*t*my + t*t*ey; fly.style.left=x+'px'; fly.style.top=y+'px'; if(Math.random()>0.5) spark(x+20,y+16,color); },16);
+  });
+}
+async function clickTube(i){
+  if(animating) return;
+  if(document.getElementById('congrats').style.display==='flex') return;
+  if(selected===-1){ if(tubes[i].length===0){ SFX.error(); return; } selected=i; SFX.select(); render(); return; }
+  if(selected===i){ selected=-1; SFX.deselect(); render(); return; }
+  let from=tubes[selected], to=tubes[i];
+  if(to.length>=ballsPerTube){ selected=-1; SFX.error(); render(); return; }
+  if(to.length>0 && to[to.length-1]!==from[from.length-1]){ selected=-1; SFX.error(); render(); return; }
+  history.push({tubes:JSON.parse(JSON.stringify(tubes)), score:score, moves:moves});
+  animating=true; let color=from[from.length-1]; let temp=[];
+  while(from.length>0 && from[from.length-1]===color && to.length+temp.length<ballsPerTube){ temp.push(from.pop()); }
+  for(let k=0;k<temp.length;k++){ SFX.whoosh(); await flyArc(document.getElementById('tube-'+selected), document.getElementById('tube-'+i), color, to.length); to.push(temp[k]); SFX.drop(k); }
+  if(to.length===ballsPerTube && to.every(v=>v===to[0])) setTimeout(()=>SFX.done(),150);
+  score+=temp.length*10; moves++; document.getElementById('moves').innerText=moves; selected=-1; animating=false; render();
+}
+makeLevel();
+</script>
+</body>
+</html>
